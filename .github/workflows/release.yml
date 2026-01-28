@@ -1,0 +1,146 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-desktop:
+    name: Build Desktop (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            name: macOS ARM64
+          - platform: macos-13
+            target: x86_64-apple-darwin
+            name: macOS x64
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            name: Linux x64
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: Windows x64
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@3d267786b128fe76c2f16a390aa2448b815359f3 # v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@4be9e76fd7c4901c61fb841f559994984270fce7 # stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libgtk-3-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            imagemagick
+
+      - name: Install ImageMagick (macOS)
+        if: startsWith(matrix.platform, 'macos')
+        run: brew install imagemagick
+
+      - name: Install ImageMagick (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: choco install imagemagick -y
+        shell: pwsh
+
+      - name: Generate icons (Unix)
+        if: matrix.platform != 'windows-latest'
+        run: |
+          cd apps/desktop
+          chmod +x scripts/generate-icons.sh
+          ./scripts/generate-icons.sh
+
+      - name: Generate icons (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          $env:Path = "C:\Program Files\ImageMagick-7.1.1-Q16-HDRI;$env:Path"
+          $sourcesvg = "..\..\public\favicon.svg"
+          $iconsDir = "src-tauri\icons"
+          magick convert -background none $sourcesvg -resize 32x32 "$iconsDir\32x32.png"
+          magick convert -background none $sourcesvg -resize 128x128 "$iconsDir\128x128.png"
+          magick convert -background none $sourcesvg -resize 256x256 "$iconsDir\128x128@2x.png"
+          magick convert -background none $sourcesvg -resize 512x512 "$iconsDir\icon.png"
+          magick convert -background none $sourcesvg -define icon:auto-resize=256,128,64,48,32,16 "$iconsDir\icon.ico"
+        shell: pwsh
+        working-directory: apps/desktop
+
+      - name: Install root dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install desktop dependencies
+        run: bun install --frozen-lockfile
+        working-directory: apps/desktop
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: apps/desktop
+          args: --target ${{ matrix.target }}
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Pano ${{ github.ref_name }}'
+          releaseBody: 'See the changelog for details.'
+          releaseDraft: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+
+  create-release:
+    name: Create Release
+    needs: [build-desktop]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          echo "## What's Changed" > CHANGELOG.tmp
+          echo "" >> CHANGELOG.tmp
+          git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")..HEAD >> CHANGELOG.tmp || echo "- Initial release" >> CHANGELOG.tmp
+          echo "" >> CHANGELOG.tmp
+          echo "" >> CHANGELOG.tmp
+          echo "## Downloads" >> CHANGELOG.tmp
+          echo "" >> CHANGELOG.tmp
+          echo "- **macOS**: \`.dmg\` files for ARM64 (Apple Silicon) and x64 (Intel)" >> CHANGELOG.tmp
+          echo "- **Windows**: \`.msi\` installer and \`.exe\` (NSIS installer)" >> CHANGELOG.tmp
+          echo "- **Linux**: \`.AppImage\` and \`.deb\` packages" >> CHANGELOG.tmp
+
+      - name: Update GitHub Release
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
+        with:
+          body_path: CHANGELOG.tmp
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

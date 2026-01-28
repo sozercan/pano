@@ -1,0 +1,24 @@
+version: 2
+updates:
+  # JavaScript/TypeScript dependencies (npm/bun)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+      prod-dependencies:
+        dependency-type: "production"
+
+  # Go modules for testgrid-explorer
+  - package-ecosystem: "gomod"
+    directory: "/testgrid-explorer"
+    schedule:
+      interval: "weekly"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+pano
+*.exe
+
+# Tauri build
+apps/desktop/src-tauri/target/
+apps/desktop/node_modules/
+
+# Testing
+coverage/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+bun-debug.log*
+
+# Generated files
+src/frontend/routeTree.gen.ts
+
+# Lock files (Bun uses bun.lockb)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+.tanstack

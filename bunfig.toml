@@ -1,0 +1,11 @@
+[install]
+# Use exact versions for reproducibility
+exact = true
+
+[test]
+# Don't use global preload - happy-dom breaks server-side tests
+# Import happy-dom only in frontend test files that need it
+
+[run]
+# Enable TypeScript
+bun = true
