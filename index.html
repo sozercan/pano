@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Pano - Modern TestGrid Viewer" />
+    <title>Pano - TestGrid Viewer</title>
+    <link rel="icon" type="image/svg+xml" href="/pano/favicon.svg" />
+    <script>
+      // Prevent theme flash by setting theme class before first paint
+      (function() {
+        try {
+          var stored = localStorage.getItem('pano:theme');
+          var theme = stored ? JSON.parse(stored).state?.theme : 'system';
+          var isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (isDark) document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="/pano/assets/index-61M070VG.js"></script>
+    <link rel="modulepreload" crossorigin href="/pano/assets/query-0GDLkmRH.js">
+    <link rel="modulepreload" crossorigin href="/pano/assets/router-PuTsyGi-.js">
+    <link rel="modulepreload" crossorigin href="/pano/assets/ui-BnO7LcMU.js">
+    <link rel="stylesheet" crossorigin href="/pano/assets/index-i4yEbF0-.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
