@@ -5,6 +5,7 @@ import {
   type SubscriptionTarget,
   type NotificationSettings,
   generateSubscriptionId,
+  defaultNotificationSettings,
 } from '@shared/schemas'
 import {
   exportSubscriptions,
@@ -42,12 +43,7 @@ export const useSubscriptionStore = create<SubscriptionState>()(
     (set, get) => ({
       // Initial state - will be hydrated by persist middleware
       subscriptions: [],
-      notificationSettings: {
-        enabled: true,
-        checkInterval: 5,
-        notifyOnFailure: true,
-        notifyOnRecovery: true,
-      },
+      notificationSettings: defaultNotificationSettings,
 
       // Subscribe to a dashboard/tab/test
       subscribe: (subscription) => {
