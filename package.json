@@ -43,7 +43,7 @@
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.5.0",
-    "@tailwindcss/postcss": "4.3.0",
+    "@tailwindcss/postcss": "4.3.1",
     "@tanstack/router-devtools": "^1.93.1",
     "@tanstack/router-plugin": "^1.93.1",
     "@testing-library/react": "^16.1.0",
